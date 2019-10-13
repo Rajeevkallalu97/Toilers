@@ -13,7 +13,16 @@ import SAPOData
 import SAPCommon
 
 class ViewController: UIViewController {
-    var number=0
+    
+    @IBOutlet weak var ID: UITextField!
+    
+    @IBOutlet weak var Password: UITextField!
+    
+    @IBOutlet weak var show: UITextField!
+    
+    @IBOutlet weak var IDlabel: UILabel!
+    
+    @IBOutlet weak var Passwordlabel: UILabel!
     //Onbaord declaration
     let presentationDelegate = ModalUIViewControllerPresenter()
     var myContext: OnboardingContext!
@@ -71,43 +80,72 @@ class ViewController: UIViewController {
         UINavigationBar.applyFioriStyle()
         onboardOrRestore()
         
-       
-
     }
+    
+    
+    
+    
     @IBAction func pressed(_ sender: Any) {
-        number = number + 1
-        print("Button pressed \(number) times")
-        print("Log level of app is now at \(self.rootLogger.logLevel!)")
-        logger.debug("Button pressed \(number) times")
-        logger.warn("Button pressed \(number) times")
-       // uploadLogs(myContext.sapURLSession, myContext.info[OnboardingInfoKey.sapcpmsSettingsParameters] as! SAPcpmsSettingsParameters)
         
         
-        if ConnectivityUtils.isConnected() {
-            if ConnectivityUtils.isWiFiConnected() {
-                print("Currently connected by WiFi ")
-            }
-            else if ConnectivityUtils.isMobileConnected() {
-                print("Currently connected by mobile data ")
-             
-            }
-        }
-        else {
-            print("Currently offline with no network connection")
-        }
-          getProducts(serviceURL, myContext.sapURLSession)
+        //logger.debug("Button pressed \(number) times")
+        //logger.warn("Button pressed \(number) times")
+       //uploadLogs(myContext.sapURLSession, myContext.info[OnboardingInfoKey.sapcpmsSettingsParameters] as! SAPcpmsSettingsParameters)
+        
+          //getProducts(serviceURL, myContext.sapURLSession)
+          loginUser(serviceURL, myContext.sapURLSession)
+        
     }
     
+
     
+    private func loginUser(_ serviceRoot: URL, _ urlSession: SAPURLSession) {
+     let oDataProvider = OnlineODataProvider(serviceName: "InspectproService", serviceRoot: serviceRoot, sapURLSession: urlSession)
+     oDataProvider.serviceOptions.checkVersion = false
+     let loginuser = InspectproService(provider: oDataProvider)
+     
+        let queryId = DataQuery()
+        .select(LoginType.id)
+        .where(LoginType.id==(ID.text!))
+        
+        let queryPassword = DataQuery()
+     .select(LoginType.password)
+     .where(LoginType.id==(ID.text!))
+        
+        loginuser.fetchLogin(matching: queryId) { userId, error in
+            let userId = userId
+            print("\(userId?.count)")
+            if userId!.count>0 {
+                self.IDlabel.text = "Id Success"
+                loginuser.fetchLogin(matching: queryPassword) { userPassword, error in
+                    let userPassword = userPassword
+                    if self.Password.text == userPassword?[0].password! {
+                        self.Passwordlabel.text = "Password Success"
+                    }
+                    else{
+                        self.Passwordlabel.text = "Password Not Success"
+                    }
+                }
+            }
+            else{
+                self.IDlabel.text = "ID fail"
+              
+            }
+        }
+        
+        
+       
+     }
     
+    //working call uncomment if testing
     //querycalls
-    private func getProducts(_ serviceRoot: URL, _ urlSession: SAPURLSession) {
+    /* private func getProducts(_ serviceRoot: URL, _ urlSession: SAPURLSession) {
         let oDataProvider = OnlineODataProvider(serviceName: "InspectproService", serviceRoot: serviceRoot, sapURLSession: urlSession)
         oDataProvider.serviceOptions.checkVersion = false
         let espmContainer = InspectproService(provider: oDataProvider)
         let query = DataQuery()
             .select(LoginType.password)
-            .where(LoginType.id==("103"))
+            .where(LoginType.id==("101"))
         espmContainer.fetchLogin(matching: query) { products, error in
             guard let products = products else {
                 print("Error fetching products:  \(error!.localizedDescription)")
@@ -115,7 +153,10 @@ class ViewController: UIViewController {
             }
             print("Got \(products.count) products and the first product name is \(products[0].password!)")
         }
-    }
+    }*/
+    
+    
+   
     
     
     //logger functions
@@ -153,7 +194,7 @@ class ViewController: UIViewController {
     func configuredStoreManagerStep() -> StoreManagerStep {
         let step = StoreManagerStep()
         //If passcode policy is disabled on the server and the next line is uncommented, the app won’t be protected with a passcode
-        //step.defaultPasscodePolicy = nil
+        step.defaultPasscodePolicy = nil
         return step
     }
     
